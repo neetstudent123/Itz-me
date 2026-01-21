@@ -1,0 +1,8 @@
+{
+  "name": "NEET Cognition",
+  "description": "AI-Integrated Framework for NEET Aspirant Performance, Routine Management, and Cognitive Optimization.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
