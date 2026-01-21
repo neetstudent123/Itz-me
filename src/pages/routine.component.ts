@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
-import { StudyStore, Task } from '../services/study-store.service';
-import { GeminiService } from '../services/gemini.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { StudyStore, Task } from '../services/study-store.service';
+import { GeminiService } from '../services/gemini.service';
 
 @Component({
   selector: 'app-routine',

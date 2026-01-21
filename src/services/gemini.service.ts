@@ -15,13 +15,17 @@ export class GeminiService {
   async generateDailyRoutine(profile: any, focus: string): Promise<any> {
     try {
       // Instruction-First Prompting to reduce latency
-      const prompt = `ROLE: High-performance academic coach.
-TASK: Create a strict daily schedule for a NEET aspirant.
-CONTEXT:
-- Profile: ${JSON.stringify(profile)}
-- Focus Area: ${focus}
-- Method: Pomodoro or Deep Work.
-OUTPUT: JSON format only.`;
+      const prompt = `ROLE: Elite NEET Exam Strategist & Performance Coach.
+TASK: Construct a hyper-optimized daily study schedule.
+INPUTS:
+- Student Profile: ${JSON.stringify(profile)}
+- Target Focus Areas: ${focus}
+- Optimization Parameters:
+  1. Backlog Management: Allocate time for backlog clearance based on identified weaknesses.
+  2. Study Technique: Utilize Active Recall & Spaced Repetition (Interleaving subjects).
+  3. Intensity: High (Competitive exam level).
+  4. Break Strategy: Scientific (short breaks for cognitive reset).
+OUTPUT REQUIREMENT: Return strictly JSON.`;
 
       const response = await this.ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -125,5 +129,38 @@ PROBLEM: ${problemText}`
       }
     });
     return response.text || "No updates found.";
+  }
+
+  // AI File Categorization for Smart Organizer
+  async categorizeFile(filename: string, syllabusContext: any[]): Promise<{ chapterId: string, confidence: number }> {
+    try {
+      const prompt = `TASK: Map the uploaded filename to the correct NEET Syllabus Chapter ID.
+CONTEXT: List of valid Chapters: ${JSON.stringify(syllabusContext)}
+FILENAME: "${filename}"
+INSTRUCTION: 
+1. Analyze the filename for keywords (e.g., 'Kinematics', 'Bonding', 'Human Repro').
+2. Match it to the closest Chapter ID from the Context.
+3. If uncertain, return the 'General' or closest unit match.
+OUTPUT: JSON with 'chapterId' and 'confidence' (0-1).`;
+
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              chapterId: { type: Type.STRING },
+              confidence: { type: Type.NUMBER }
+            }
+          }
+        }
+      });
+      return JSON.parse(response.text);
+    } catch (e) {
+      console.error('Categorization Error', e);
+      return { chapterId: '', confidence: 0 };
+    }
   }
 }
