@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed, effect } from '@angular/core';
 
 export interface Task {
@@ -13,11 +14,14 @@ export interface Task {
 export interface StudyLog {
   date: string;
   subject: string;
+  topic?: string;
   durationMinutes: number;
+  focusRating?: number; // 1-5 Scale
 }
 
 export interface MistakeEntry {
   id: string;
+  chapterId?: string; // Linked to specific chapter
   date: string;
   questionImage?: string;
   questionText: string;
@@ -119,8 +123,14 @@ export class StudyStore {
     return gained;
   }
 
-  addLog(subject: string, minutes: number) {
-    this.logs.update(l => [...l, { date: new Date().toISOString(), subject, durationMinutes: minutes }]);
+  addLog(subject: string, minutes: number, topic: string = '', focusRating: number = 0) {
+    this.logs.update(l => [...l, { 
+      date: new Date().toISOString(), 
+      subject, 
+      durationMinutes: minutes,
+      topic,
+      focusRating
+    }]);
     this.calculateXP(minutes, true, 0); 
   }
 

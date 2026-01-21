@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { GoogleGenAI, Type, Chat } from '@google/genai';
 
@@ -179,6 +180,70 @@ OUTPUT: JSON list of micro-tasks with 'priority' (High/Med/Low).`;
                 }
             }
         }
+    });
+    return JSON.parse(response.text);
+  }
+
+  // 5. Chapter Health Report (Vault Analysis)
+  async generateChapterHealthReport(extractedText: string, chapterName: string): Promise<any> {
+    const prompt = `ROLE: NEET Prep Auditor.
+TASK: Analyze the student's extracted notes/resources for '${chapterName}'.
+INPUT CONTENT: "${extractedText.substring(0, 30000)}..." (Truncated for token limit)
+COMPARE AGAINST: Standard NCERT NEET Syllabus for ${chapterName}.
+OUTPUT JSON:
+- mastery_percentage: 0-100 score based on coverage depth.
+- missing_concepts: List of 3-5 key NCERT terms/concepts NOT found or weakly covered in the input.
+- quick_quiz: 5 MCQs based strictly on the INPUT CONTENT to test retention of their own notes.`;
+
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            mastery_percentage: { type: Type.INTEGER },
+            missing_concepts: { type: Type.ARRAY, items: { type: Type.STRING } },
+            quick_quiz: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  correct_answer_index: { type: Type.INTEGER },
+                  explanation: { type: Type.STRING }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+    return JSON.parse(response.text);
+  }
+
+  // 6. Cognitive Priming (Pre-Study Focus Anchor)
+  async generatePriming(topic: string, subject: string): Promise<any> {
+    const prompt = `ROLE: Cognitive Performance Coach.
+TASK: Generate 3 curiosity-inducing "Priming Anchors" (Fascinating facts or paradoxes) for the topic '${topic}' in '${subject}'.
+GOAL: Trigger dopamine and focus before the student starts studying.
+OUTPUT: JSON { anchors: string[], micro_challenge: string (A tiny 2-min task to start) }`;
+
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+           type: Type.OBJECT,
+           properties: {
+             anchors: { type: Type.ARRAY, items: { type: Type.STRING } },
+             micro_challenge: { type: Type.STRING }
+           }
+        }
+      }
     });
     return JSON.parse(response.text);
   }
