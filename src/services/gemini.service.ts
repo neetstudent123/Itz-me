@@ -81,7 +81,8 @@ OUTPUT: JSON format only.`;
       }
     });
 
-    const resultStream = await chat.sendMessageStream({ parts });
+    // Fix: Use 'message' property instead of 'parts'
+    const resultStream = await chat.sendMessageStream({ message: parts });
     
     for await (const chunk of resultStream) {
       if (chunk.text) {
@@ -123,6 +124,6 @@ PROBLEM: ${problemText}`
         tools: [{ googleSearch: {} }]
       }
     });
-    return response.text;
+    return response.text || "No updates found.";
   }
 }

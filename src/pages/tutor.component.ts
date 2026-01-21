@@ -15,7 +15,7 @@ interface Message {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex flex-col h-full bg-white relative">
+    <div class="flex flex-col h-full bg-white relative pb-[72px] md:pb-0">
       <!-- Header -->
       <div class="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0 z-10">
         <div>
@@ -168,7 +168,7 @@ export class TutorComponent {
         // Standard Chat - Streaming Mode
         const history = this.messages()
           .slice(0, -1) // Exclude the just added user message
-          .filter(m => !m.isThinking)
+          .filter(m => !m.isThinking && m.text.trim().length > 0) // IMPORTANT: Filter empty messages to prevent API errors
           .map(m => ({ role: m.role, parts: [{ text: m.text }] }));
         
         // Add empty model message for streaming
@@ -193,12 +193,12 @@ export class TutorComponent {
       }
       
     } catch (err) {
-      // Error handling
+      console.error('Gemini Chat Error:', err); // Log error for debugging
       this.messages.update(msgs => {
         const newMsgs = [...msgs.filter(m => !m.isThinking)];
         // If last message was partial model response, keep it or append error? 
         // For simplicity, append error message.
-        newMsgs.push({ role: 'model', text: "I'm having trouble connecting to the neural network. Please try again." });
+        newMsgs.push({ role: 'model', text: "I'm having trouble connecting to the neural network. Please try again later." });
         return newMsgs;
       });
     } finally {

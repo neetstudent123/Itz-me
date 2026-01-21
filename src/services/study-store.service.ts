@@ -16,6 +16,12 @@ export interface StudyLog {
   durationMinutes: number;
 }
 
+export interface UserSettings {
+  wakeUpTime: string;
+  dailyGoal: number; // hours
+  darkMode: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -24,6 +30,13 @@ export class StudyStore {
   userName = signal<string>('Aspirant');
   streak = signal<number>(12);
   studyLevel = signal<number>(42); // Level 42 Bio-Master
+  
+  // Settings
+  settings = signal<UserSettings>({
+    wakeUpTime: '06:00',
+    dailyGoal: 6,
+    darkMode: false
+  });
   
   // Routine
   dailyRoutine = signal<Task[]>([]);
@@ -52,6 +65,15 @@ export class StudyStore {
     effect(() => {
       this.saveState();
     });
+
+    // Apply Dark Mode
+    effect(() => {
+      if (this.settings().darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    });
   }
 
   addLog(subject: string, minutes: number) {
@@ -62,12 +84,15 @@ export class StudyStore {
   updateLevel(minutes: number) {
     // Simple gamification logic
     const points = minutes * 0.5; 
-    // In a real app, this would be more complex
     this.studyLevel.update(l => l + Math.floor(points / 60)); 
   }
 
   setRoutine(tasks: Task[]) {
     this.dailyRoutine.set(tasks.map(t => ({...t, completed: false})));
+  }
+
+  addTask(task: Task) {
+    this.dailyRoutine.update(tasks => [...tasks, task].sort((a, b) => a.time_start.localeCompare(b.time_start)));
   }
 
   toggleTask(index: number) {
@@ -76,6 +101,10 @@ export class StudyStore {
       newTasks[index].completed = !newTasks[index].completed;
       return newTasks;
     });
+  }
+
+  updateSettings(newSettings: Partial<UserSettings>) {
+    this.settings.update(s => ({ ...s, ...newSettings }));
   }
 
   private loadState() {
@@ -87,6 +116,9 @@ export class StudyStore {
       this.studyLevel.set(parsed.studyLevel || 1);
       this.dailyRoutine.set(parsed.dailyRoutine || []);
       this.logs.set(parsed.logs || []);
+      if (parsed.settings) {
+        this.settings.set({ ...this.settings(), ...parsed.settings });
+      }
     }
   }
 
@@ -96,7 +128,8 @@ export class StudyStore {
       streak: this.streak(),
       studyLevel: this.studyLevel(),
       dailyRoutine: this.dailyRoutine(),
-      logs: this.logs()
+      logs: this.logs(),
+      settings: this.settings()
     };
     localStorage.setItem('neet_app_state', JSON.stringify(state));
   }
