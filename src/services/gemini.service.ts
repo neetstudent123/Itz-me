@@ -11,21 +11,24 @@ export class GeminiService {
     this.ai = new GoogleGenAI({ apiKey: process.env['API_KEY'] || '' });
   }
 
-  // Routine Generation using Structured Output
+  // 1. Routine Generation with Chronotype Logic
   async generateDailyRoutine(profile: any, focus: string): Promise<any> {
     try {
-      // Instruction-First Prompting to reduce latency
-      const prompt = `ROLE: Elite NEET Exam Strategist & Performance Coach.
-TASK: Construct a hyper-optimized daily study schedule.
+      // Logic: Peak Energy vs Slump based on Chronotype
+      const peakHours = profile.chronotype === 'EarlyBird' ? '05:00 - 11:00' : '20:00 - 01:00';
+      const slumpHours = profile.chronotype === 'EarlyBird' ? '14:00 - 16:00' : '06:00 - 09:00';
+
+      const prompt = `ROLE: Expert NEET Exam Strategist.
+TASK: Construct a daily schedule optimized for a '${profile.chronotype}' chronotype.
 INPUTS:
-- Student Profile: ${JSON.stringify(profile)}
-- Target Focus Areas: ${focus}
-- Optimization Parameters:
-  1. Backlog Management: Allocate time for backlog clearance based on identified weaknesses.
-  2. Study Technique: Utilize Active Recall & Spaced Repetition (Interleaving subjects).
-  3. Intensity: High (Competitive exam level).
-  4. Break Strategy: Scientific (short breaks for cognitive reset).
-OUTPUT REQUIREMENT: Return strictly JSON.`;
+- Profile: ${JSON.stringify(profile)}
+- Focus: ${focus}
+- Peak Energy Hours: ${peakHours} (Schedule High-Weightage Physics/Chem here).
+- Slump Hours: ${slumpHours} (Schedule Passive Biology Reading here).
+- Optimization Rules:
+  1. Interleave subjects to prevent cognitive fatigue.
+  2. Include short "Micro-Breaks".
+OUTPUT: JSON Schedule only.`;
 
       const response = await this.ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -62,86 +65,59 @@ OUTPUT REQUIREMENT: Return strictly JSON.`;
     }
   }
 
-  // Streaming Chat for Low Latency
-  async *chatWithTutorStream(history: any[], message: string, imageBase64?: string): AsyncGenerator<string> {
-    const model = 'gemini-2.5-flash';
-    const parts: any[] = [{ text: message }];
-    
-    if (imageBase64) {
-      parts.unshift({
-        inlineData: {
-          mimeType: 'image/jpeg', // Assuming jpeg for simplicity, in production detect mime
-          data: imageBase64
+  // 2. Mistake Notebook Analysis (Enhanced Error Analyst)
+  async analyzeMistake(errorText: string, imageBase64?: string): Promise<any> {
+    try {
+      const parts: any[] = [];
+      if (imageBase64) {
+        parts.push({
+          inlineData: { mimeType: 'image/jpeg', data: imageBase64 }
+        });
+      }
+      parts.push({
+        text: `ROLE: AI Error Analyst for NEET.
+TASK: Analyze this wrong answer.
+INPUT: Question text/image.
+OUTPUT JSON:
+- error_category: 'Conceptual Gap', 'Silly Mistake', 'Time Pressure', or 'Knowledge Void'.
+- root_concept_to_revise: Specific NCERT topic/paragraph.
+- correction_strategy: 1-sentence actionable advice (Socratic tone).
+- similar_question_clue: A hint for a similar problem to test retention.`
+      });
+
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts },
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              error_category: { type: Type.STRING },
+              root_concept_to_revise: { type: Type.STRING },
+              correction_strategy: { type: Type.STRING },
+              similar_question_clue: { type: Type.STRING }
+            }
+          }
         }
       });
-    }
-
-    const chat: Chat = this.ai.chats.create({
-      model: model,
-      history: history,
-      config: {
-        // Optimized system instruction
-        systemInstruction: "ROLE: Expert NEET Tutor. METHOD: Socratic & Feynman. GOAL: Explain concepts simply. Solve problems step-by-step."
-      }
-    });
-
-    // Fix: Use 'message' property instead of 'parts'
-    const resultStream = await chat.sendMessageStream({ message: parts });
-    
-    for await (const chunk of resultStream) {
-      if (chunk.text) {
-        yield chunk.text;
-      }
+      return JSON.parse(response.text);
+    } catch (e) {
+      console.error('Mistake Analysis Error', e);
+      throw e;
     }
   }
 
-  // Fallback non-streaming (kept for compatibility if needed, but stream preferred)
-  async chatWithTutor(history: any[], message: string, imageBase64?: string): Promise<string> {
-    let text = '';
-    const stream = this.chatWithTutorStream(history, message, imageBase64);
-    for await (const chunk of stream) {
-      text += chunk;
-    }
-    return text;
-  }
-
-  // Deep Thinking Mode for Complex Physics/Chem Problems
-  async deepThinkSolve(problemText: string): Promise<string> {
-    // gemini-2.5-flash supports thinking now via config if enabled, but using specific instructions for "Deep Think" behavior
-    // Using a rigorous instruction set instead of 'thinkingConfig' which might be model-specific/preview.
-    const response = await this.ai.models.generateContent({
-      model: 'gemini-2.5-flash', 
-      contents: `TASK: Solve this complex NEET problem.
-METHOD: Chain-of-Thought.
-REQUIREMENT: Step-by-step rigor. Identify physical principles first.
-PROBLEM: ${problemText}`
-    });
-    return response.text;
-  }
-
-  // Search Grounding for Exam News
-  async getExamUpdates(): Promise<string> {
-    const response = await this.ai.models.generateContent({
-      model: 'gemini-2.5-flash', // Switched to 2.5 flash for speed/consistency
-      contents: "Latest official NTA updates for NEET 2025 exam dates and news.",
-      config: {
-        tools: [{ googleSearch: {} }]
-      }
-    });
-    return response.text || "No updates found.";
-  }
-
-  // AI File Categorization for Smart Organizer
-  async categorizeFile(filename: string, syllabusContext: any[]): Promise<{ chapterId: string, confidence: number }> {
+  // 3. Automated Active Recall (10 Questions Midnight Quiz)
+  async generateChapterQuiz(chapterName: string): Promise<any> {
     try {
-      const prompt = `TASK: Map the uploaded filename to the correct NEET Syllabus Chapter ID.
-CONTEXT: List of valid Chapters: ${JSON.stringify(syllabusContext)}
-FILENAME: "${filename}"
-INSTRUCTION: 
-1. Analyze the filename for keywords (e.g., 'Kinematics', 'Bonding', 'Human Repro').
-2. Match it to the closest Chapter ID from the Context.
-3. If uncertain, return the 'General' or closest unit match.
-OUTPUT: JSON with 'chapterId' and 'confidence' (0-1).`;
+      const prompt = `ROLE: NEET Quiz Master.
+TASK: Generate 10 High-Yield MCQs for '${chapterName}'.
+STYLE: 
+- 4 Easy (Direct NCERT lines)
+- 3 Medium (Statement/Assertion-Reason)
+- 3 Hard (Multi-concept application)
+OUTPUT: JSON Array of questions.`;
 
       const response = await this.ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -151,16 +127,103 @@ OUTPUT: JSON with 'chapterId' and 'confidence' (0-1).`;
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              chapterId: { type: Type.STRING },
-              confidence: { type: Type.NUMBER }
+              questions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.INTEGER },
+                    question: { type: Type.STRING },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    correct_answer_index: { type: Type.INTEGER },
+                    explanation: { type: Type.STRING }
+                  }
+                }
+              }
             }
           }
         }
       });
       return JSON.parse(response.text);
     } catch (e) {
-      console.error('Categorization Error', e);
-      return { chapterId: '', confidence: 0 };
+      console.error('Quiz Gen Error', e);
+      throw e;
     }
+  }
+
+  // 4. Dynamic Backlog Killer (Adaptive Rescheduler)
+  async replanBacklogs(pendingTasks: string[], currentProfile: any): Promise<any> {
+     const prompt = `ROLE: Adaptive Scheduler.
+TASK: Redistribute these backlog tasks: ${JSON.stringify(pendingTasks)}.
+STRATEGY:
+1. Break large chapters into 30-minute "Micro-Blocks".
+2. Prioritize by NEET Weightage (e.g., Mechanics > Units & Dimensions).
+3. Do not overwhelm: Spread over next 3 days.
+OUTPUT: JSON list of micro-tasks with 'priority' (High/Med/Low).`;
+    
+    const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { 
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        task_name: { type: Type.STRING },
+                        duration_minutes: { type: Type.INTEGER },
+                        priority: { type: Type.STRING },
+                        suggested_day_offset: { type: Type.INTEGER, description: "0 for today, 1 for tomorrow" }
+                    }
+                }
+            }
+        }
+    });
+    return JSON.parse(response.text);
+  }
+
+  // Chat Helpers (Existing)
+  async *chatWithTutorStream(history: any[], message: string, imageBase64?: string): AsyncGenerator<string> {
+    const model = 'gemini-2.5-flash';
+    const parts: any[] = [{ text: message }];
+    if (imageBase64) {
+      parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 }});
+    }
+    const chat: Chat = this.ai.chats.create({
+      model: model,
+      history: history,
+      config: { systemInstruction: "ROLE: Expert NEET Tutor. METHOD: Socratic. GOAL: Explain simply." }
+    });
+    const resultStream = await chat.sendMessageStream({ message: parts });
+    for await (const chunk of resultStream) {
+      if (chunk.text) yield chunk.text;
+    }
+  }
+
+  async deepThinkSolve(problemText: string): Promise<string> {
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-2.5-flash', 
+      contents: `TASK: Solve complex NEET problem. METHOD: Chain-of-Thought. PROBLEM: ${problemText}`
+    });
+    return response.text;
+  }
+
+  async getExamUpdates(): Promise<string> {
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: "Latest official NTA updates for NEET 2025.",
+      config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "No updates found.";
+  }
+
+  async categorizeFile(filename: string, syllabusContext: any[]): Promise<{ chapterId: string, confidence: number }> {
+    const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `TASK: Map '${filename}' to a Chapter ID from: ${JSON.stringify(syllabusContext)}. OUTPUT: JSON {chapterId, confidence}.`,
+        config: { responseMimeType: 'application/json' }
+    });
+    return JSON.parse(response.text);
   }
 }

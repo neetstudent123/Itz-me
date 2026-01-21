@@ -29,6 +29,10 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
             Organizer
           </a>
+          <a routerLink="/mistakes" routerLinkActive="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+             Mistake Log
+          </a>
           <a routerLink="/timer" routerLinkActive="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             Deep Focus
@@ -65,11 +69,11 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
            <span class="text-[10px] mt-1">Plan</span>
         </a>
-        <a routerLink="/organizer" routerLinkActive="text-indigo-600 dark:text-indigo-400" class="flex flex-col items-center text-slate-400">
+        <a routerLink="/mistakes" routerLinkActive="text-indigo-600 dark:text-indigo-400" class="flex flex-col items-center text-slate-400">
            <div class="bg-indigo-600 text-white rounded-full p-2 -mt-6 shadow-lg border-4 border-slate-50 dark:border-slate-900">
-             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
            </div>
-           <span class="text-[10px] mt-1">Files</span>
+           <span class="text-[10px] mt-1">Mistakes</span>
         </a>
         <a routerLink="/timer" routerLinkActive="text-indigo-600 dark:text-indigo-400" class="flex flex-col items-center text-slate-400">
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

@@ -94,7 +94,15 @@ import { GeminiService } from '../services/gemini.service';
                              }
                              <span class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ chapter.name }}</span>
                            </div>
-                           <span class="text-[10px] font-mono text-slate-400">{{ chapter.id }}</span>
+                           
+                           <div class="flex items-center gap-2">
+                              <span class="text-[10px] font-mono text-slate-400">{{ chapter.id }}</span>
+                              <!-- Quiz Button -->
+                              <button (click)="generateQuiz(chapter.name)" class="text-[10px] bg-violet-100 text-violet-700 px-2 py-1 rounded hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300 transition-colors flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                Quiz Me
+                              </button>
+                           </div>
                         </div>
 
                         <!-- Resources List -->
@@ -107,8 +115,6 @@ import { GeminiService } from '../services/gemini.service';
                                </div>
                              }
                           </div>
-                        } @else {
-                           <p class="ml-7 text-xs text-slate-400 italic">No notes uploaded yet.</p>
                         }
                      </div>
                    }
@@ -133,6 +139,40 @@ import { GeminiService } from '../services/gemini.service';
            </button>
         </div>
       }
+      
+      <!-- Quiz Modal (Simple Implementation) -->
+      @if (activeQuiz()) {
+         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg p-6 h-[500px] flex flex-col">
+               <div class="flex justify-between items-center mb-4">
+                  <h3 class="font-bold text-lg dark:text-white">Midnight Quiz</h3>
+                  <button (click)="activeQuiz.set(null)" class="text-slate-400 hover:text-white">Close</button>
+               </div>
+               <div class="flex-1 overflow-y-auto space-y-4">
+                  @for (q of activeQuiz()?.questions; track q.id) {
+                    <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                       <p class="font-medium text-slate-800 dark:text-slate-200 mb-2">{{ q.question }}</p>
+                       <div class="space-y-1">
+                          @for (opt of q.options; track $index) {
+                             <div class="p-2 border border-slate-200 dark:border-slate-700 rounded text-sm dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-slate-700 cursor-pointer"
+                               [class.bg-green-100]="showAnswers() && $index === q.correct_answer_index"
+                               [class.dark:bg-green-900]="$index === q.correct_answer_index && showAnswers()">
+                               {{ opt }}
+                             </div>
+                          }
+                       </div>
+                       @if (showAnswers()) {
+                         <p class="text-xs text-emerald-600 mt-2 font-medium">{{ q.explanation }}</p>
+                       }
+                    </div>
+                  }
+               </div>
+               <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <button (click)="showAnswers.set(true)" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Reveal Answers</button>
+               </div>
+            </div>
+         </div>
+      }
     </div>
   `
 })
@@ -146,6 +186,9 @@ export class OrganizerComponent {
   expandedUnits = signal<Set<string>>(new Set());
   uploading = signal(false);
   lastUploaded = signal<{fileName: string, chapterName: string} | null>(null);
+  
+  activeQuiz = signal<any>(null);
+  showAnswers = signal(false);
 
   currentUnits = computed(() => {
     const data = this.syllabusService.syllabus().find(
@@ -174,27 +217,19 @@ export class OrganizerComponent {
     this.uploading.set(true);
     
     try {
-      // 1. Get Context
       const context = this.syllabusService.getAllChapterNames();
-      
-      // 2. AI Logic (Task 2)
       const categorization = await this.gemini.categorizeFile(file.name, context);
       
       if (categorization.chapterId) {
-        // 3. Save to Store
         this.syllabusService.addResource(categorization.chapterId, {
           file_name: file.name,
-          file_type: 'Notes', // Default for demo
+          file_type: 'Notes',
           upload_date: new Date().toISOString()
         });
 
-        // 4. Feedback
         const matchedChapter = context.find(c => c.id === categorization.chapterId);
         if (matchedChapter) {
             this.lastUploaded.set({ fileName: file.name, chapterName: matchedChapter.name });
-            
-            // Auto-navigate to that subject/class if needed
-            // For now, simple toast notification
         }
       } else {
         alert("Could not automatically categorize this file. Please check the filename.");
@@ -202,6 +237,19 @@ export class OrganizerComponent {
     } catch (e) {
       console.error(e);
       alert('Error analyzing file.');
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
+  async generateQuiz(chapterName: string) {
+    this.uploading.set(true); // Reuse loading spinner logic
+    this.showAnswers.set(false);
+    try {
+      const quiz = await this.gemini.generateChapterQuiz(chapterName);
+      this.activeQuiz.set(quiz);
+    } catch(e) {
+      alert('Failed to generate quiz. Try again.');
     } finally {
       this.uploading.set(false);
     }

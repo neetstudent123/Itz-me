@@ -42,6 +42,18 @@ import { GeminiService } from '../services/gemini.service';
       <div class="flex justify-between items-center mb-6">
          <h3 class="font-bold text-slate-700 dark:text-slate-200">Today's Tasks</h3>
          <div class="flex gap-2">
+            <!-- Backlog Killer Button -->
+            <button (click)="killBacklog()" 
+              [disabled]="loadingBacklog()"
+              class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-colors">
+              @if (loadingBacklog()) {
+                <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              }
+              Kill Backlogs
+            </button>
+
             <button (click)="showAddTask.set(true)" class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg transition-colors">
                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             </button>
@@ -182,6 +194,7 @@ export class RoutineComponent {
   store = inject(StudyStore);
   gemini = inject(GeminiService);
   loading = signal(false);
+  loadingBacklog = signal(false);
   showAddTask = signal(false);
 
   // Calendar Logic
@@ -223,19 +236,12 @@ export class RoutineComponent {
   selectDate(selectedDay: any) {
     this.calendarDays.forEach(d => d.active = false);
     selectedDay.active = true;
-    // In a real app, load tasks for this date from store
-    // For demo, we just clear/show current for today
-    if (selectedDay.dayNum !== new Date().getDate()) {
-       // Just visual feedback for now, clearing routine to show "No plan"
-       // Ideally we'd have store.getRoutine(date)
-    }
   }
 
   saveNewTask() {
     if (this.newTask.activity) {
       this.store.addTask(this.newTask as Task);
       this.showAddTask.set(false);
-      // Reset
       this.newTask = { ...this.newTask, activity: '', description: 'Manual entry' };
     }
   }
@@ -246,6 +252,7 @@ export class RoutineComponent {
       const profile = {
         level: this.store.studyLevel(),
         streak: this.store.streak(),
+        chronotype: this.store.settings().chronotype, // Use Setting
         weakness: "Organic Chemistry",
         exam_days_left: 240
       };
@@ -258,6 +265,37 @@ export class RoutineComponent {
       alert("Failed to generate routine. Please check API Key.");
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async killBacklog() {
+    this.loadingBacklog.set(true);
+    try {
+        // Simulating "Backlog Tasks" since we don't have a real persistent history of missed tasks in this demo
+        const mockBacklogs = ["Rotational Motion (Theory)", "Plant Physiology (NCERT Reading)", "Chemical Bonding (PYQs)"];
+        
+        const microBlocks = await this.gemini.replanBacklogs(mockBacklogs, {});
+        
+        // Inject into today's routine (for demo purposes)
+        let startTime = 16; // 4 PM start for backlogs
+        microBlocks.forEach((mb: any) => {
+            const task: Task = {
+                time_start: `${startTime}:00`,
+                time_end: `${startTime}:30`,
+                activity: `Micro-Block: ${mb.task_name}`,
+                subject: 'General',
+                type: 'Revision',
+                description: `Priority: ${mb.priority} | Backlog clearance`,
+                completed: false
+            };
+            this.store.addTask(task);
+            startTime += 1; // Spacing them out
+        });
+        alert(`Generated ${microBlocks.length} micro-blocks to kill your backlog!`);
+    } catch (e) {
+        alert("Could not plan backlogs.");
+    } finally {
+        this.loadingBacklog.set(false);
     }
   }
 

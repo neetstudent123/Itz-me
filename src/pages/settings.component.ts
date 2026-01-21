@@ -27,6 +27,40 @@ import { StudyStore } from '../services/study-store.service';
           </div>
         </div>
 
+        <!-- Bio-Rhythm Section -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+           <div class="flex items-center gap-3 mb-4 text-rose-500">
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+             <h3 class="font-bold text-lg">Chronotype</h3>
+          </div>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">We'll schedule hard topics during your Peak Energy hours.</p>
+          
+          <div class="grid grid-cols-2 gap-4">
+             <button (click)="updateChronotype('EarlyBird')" 
+                class="p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2"
+                [class.border-rose-500]="store.settings().chronotype === 'EarlyBird'"
+                [class.bg-rose-50]="store.settings().chronotype === 'EarlyBird'"
+                [class.dark:bg-rose-900/20]="store.settings().chronotype === 'EarlyBird'"
+                [class.border-slate-200]="store.settings().chronotype !== 'EarlyBird'"
+                [class.dark:border-slate-700]="store.settings().chronotype !== 'EarlyBird'">
+                <span class="text-2xl">🌅</span>
+                <span class="font-bold">Early Bird</span>
+                <span class="text-xs text-slate-500">Peak: 6AM - 11AM</span>
+             </button>
+             <button (click)="updateChronotype('NightOwl')" 
+                class="p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2"
+                [class.border-indigo-500]="store.settings().chronotype === 'NightOwl'"
+                [class.bg-indigo-50]="store.settings().chronotype === 'NightOwl'"
+                [class.dark:bg-indigo-900/20]="store.settings().chronotype === 'NightOwl'"
+                [class.border-slate-200]="store.settings().chronotype !== 'NightOwl'"
+                [class.dark:border-slate-700]="store.settings().chronotype !== 'NightOwl'">
+                <span class="text-2xl">🦉</span>
+                <span class="font-bold">Night Owl</span>
+                <span class="text-xs text-slate-500">Peak: 8PM - 1AM</span>
+             </button>
+          </div>
+        </div>
+
         <!-- Goals Section -->
         <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
            <div class="flex items-center gap-3 mb-4 text-emerald-600 dark:text-emerald-400">
@@ -83,6 +117,10 @@ export class SettingsComponent {
 
   updateGoal(hours: number) {
     this.store.updateSettings({ dailyGoal: hours });
+  }
+
+  updateChronotype(type: 'EarlyBird' | 'NightOwl') {
+    this.store.updateSettings({ chronotype: type });
   }
 
   toggleDarkMode() {
