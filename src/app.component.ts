@@ -1,3 +1,4 @@
+
 import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -69,11 +70,12 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
            <span class="text-[10px] mt-1">Plan</span>
         </a>
-        <a routerLink="/mistakes" routerLinkActive="text-indigo-600 dark:text-indigo-400" class="flex flex-col items-center text-slate-400">
-           <div class="bg-indigo-600 text-white rounded-full p-2 -mt-6 shadow-lg border-4 border-slate-50 dark:border-slate-900">
-             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <a routerLink="/organizer" routerLinkActive="text-indigo-600 dark:text-indigo-400" class="flex flex-col items-center text-slate-400">
+           <div class="bg-indigo-600 text-white rounded-full p-2 -mt-6 shadow-lg border-4 border-slate-50 dark:border-slate-900 flex items-center justify-center">
+             <!-- Cube/Vault Icon -->
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
            </div>
-           <span class="text-[10px] mt-1">Mistakes</span>
+           <span class="text-[10px] mt-1">Vault</span>
         </a>
         <a routerLink="/timer" routerLinkActive="text-indigo-600 dark:text-indigo-400" class="flex flex-col items-center text-slate-400">
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

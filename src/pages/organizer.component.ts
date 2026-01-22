@@ -24,26 +24,50 @@ import { StudyStore, MistakeEntry } from '../services/study-store.service';
              type="text" 
              [(ngModel)]="searchQuery" 
              (ngModelChange)="onSearch()"
-             placeholder="Search chapters to open Chamber..." 
+             placeholder="Search chapters (e.g., 'Plant Kingdom')" 
              class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white placeholder-slate-400 transition-all shadow-inner"
            >
-           @if (searchResults().length > 0 && searchQuery.length > 0) {
-             <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-60 overflow-y-auto z-50">
-                @for (result of searchResults(); track result.id) {
-                  <button (click)="openChapterById(result.id)" class="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex justify-between items-center group transition-colors">
-                     <span class="font-medium text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ result.name }}</span>
-                     <span class="text-xs uppercase font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{{ result.subject }}</span>
-                  </button>
-                }
-             </div>
+           @if (searchQuery.length > 0 && searchResults().length > 0 && activeChapter()) {
+              <!-- Small Dropdown hint only if looking at a chapter -->
+              <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-60 overflow-y-auto z-50">
+                 @for (result of searchResults(); track result.id) {
+                   <button (click)="openChapterById(result.id)" class="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex justify-between items-center group transition-colors">
+                      <span class="font-medium text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ result.name }}</span>
+                      <span class="text-xs uppercase font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{{ result.subject }}</span>
+                   </button>
+                 }
+              </div>
            }
         </div>
       </div>
 
       <div class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 relative">
         
-        <!-- View 1: Subject Browser (When no chapter active) -->
-        @if (!activeChapter()) {
+        <!-- View 0: Search Results (Global) -->
+        @if (searchQuery.length > 0 && !activeChapter()) {
+           <div class="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
+              <h2 class="text-xl font-bold text-slate-800 dark:text-white">Search Results</h2>
+              @if (searchResults().length === 0) {
+                 <div class="text-center py-10 text-slate-500">
+                    No chapters found matching "{{ searchQuery }}"
+                 </div>
+              }
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 @for (result of searchResults(); track result.id) {
+                    <button (click)="openChapterById(result.id)" class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all text-left group">
+                       <div class="flex justify-between items-start">
+                          <h3 class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{ result.name }}</h3>
+                          <span class="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300">{{ result.subject }}</span>
+                       </div>
+                       <p class="text-sm text-slate-400 mt-2">Tap to open chamber</p>
+                    </button>
+                 }
+              </div>
+           </div>
+        }
+
+        <!-- View 1: Subject Browser (When no chapter active AND no search) -->
+        @if (!activeChapter() && searchQuery.length === 0) {
           <div class="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
              <div class="text-center py-8">
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Resource Vault</h2>
@@ -174,15 +198,24 @@ import { StudyStore, MistakeEntry } from '../services/study-store.service';
 
                    <!-- File Categories Grid -->
                    <div class="grid grid-cols-1 gap-4">
-                      @for (cat of ['Notes', 'PYQ', 'Formula']; track cat) {
+                      @for (cat of fileCategories; track cat) {
                         <div class="border border-slate-100 dark:border-slate-700 rounded-xl p-4 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
                            <div class="flex justify-between items-center mb-3">
                               <div class="flex items-center gap-2">
                                  <div class="w-2 h-8 rounded-full" 
                                    [class.bg-blue-500]="cat === 'Notes'"
                                    [class.bg-amber-500]="cat === 'PYQ'"
-                                   [class.bg-purple-500]="cat === 'Formula'"></div>
+                                   [class.bg-purple-500]="cat === 'Formula'"
+                                   [class.bg-rose-500]="cat === 'Mind Maps'"
+                                   [class.bg-teal-500]="cat === 'Solutions'"></div>
                                  <h4 class="font-bold text-slate-700 dark:text-slate-200">{{ cat }}</h4>
+                                 
+                                 <!-- Success Indicator -->
+                                 @if (filteredFiles(cat).length > 0) {
+                                    <div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full p-0.5 ml-1">
+                                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                 }
                               </div>
                               <label class="cursor-pointer text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
                                  <svg *ngIf="!uploading()" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -336,14 +369,18 @@ export class OrganizerComponent {
   activeSubject = signal('Physics');
   activeChapter = signal<any>(null);
   
+  // Expanded Categories for "Two more chambers"
+  fileCategories = ['Notes', 'PYQ', 'Formula', 'Mind Maps', 'Solutions'];
+
   // Search State
   searchQuery = '';
+  // Simple search filter for dropdown and main view
   searchResults = computed(() => {
      if (!this.searchQuery) return [];
      const term = this.searchQuery.toLowerCase();
+     // Search across ALL subjects
      return this.syllabusService.getAllChapterNames()
-        .filter(c => c.name.toLowerCase().includes(term))
-        .slice(0, 5); // Limit to 5 results
+        .filter(c => c.name.toLowerCase().includes(term));
   });
 
   // File State
@@ -400,8 +437,6 @@ export class OrganizerComponent {
 
   // Opens chapter from search result
   async openChapterById(id: string) {
-    // Find the full chapter object from syllabus service
-    // We need to traverse the syllabus structure
     const allData = this.syllabusService.syllabus();
     let foundChapter = null;
     
@@ -510,6 +545,12 @@ export class OrganizerComponent {
   }
   
   onSearch() {
-    // Logic handled by computed signal
+     // If user is inside a chamber, search might be filtered differently if we wanted
+     // But for now, if they type in global search, we let them see search results
+     // The template handles the view switching logic: @if (searchQuery.length > 0 && !activeChapter())
+     // If they are in activeChapter, the dropdown appears.
+     // To force main view search, user would need to navigate back or we'd auto-navigate. 
+     // We'll keep it simple: Type -> Dropdown if active, View if inactive. 
+     // If user wants to search globally from active, they can click 'X' to close active or just use dropdown.
   }
 }

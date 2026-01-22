@@ -5,7 +5,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 export interface StoredFile {
   id: string;
   chapterId: string;
-  category: 'Notes' | 'PYQ' | 'Formula';
+  category: 'Notes' | 'PYQ' | 'Formula' | 'Mind Maps' | 'Solutions';
   fileName: string;
   fileType: string;
   uploadDate: string;
@@ -23,8 +23,19 @@ export class DbService {
   private dbPromise: Promise<IDBDatabase>;
 
   constructor() {
-    // Set worker source for PDF.js
-    (pdfjsLib as any).GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    // Fix for: Cannot set properties of undefined (setting 'workerSrc')
+    // Handle both ESM and CJS interop for pdfjs-dist
+    try {
+      // safe check for window context
+      if (typeof window !== 'undefined') {
+         const pdfJs = (pdfjsLib as any).default || pdfjsLib;
+         if (pdfJs && pdfJs.GlobalWorkerOptions) {
+           pdfJs.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+         }
+      }
+    } catch (e) {
+      console.warn('PDF.js init warning:', e);
+    }
     this.dbPromise = this.initDB();
   }
 
@@ -93,21 +104,29 @@ export class DbService {
   }
 
   private async extractPdfText(file: File): Promise<string> {
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
-    
-    let fullText = '';
-    // Limit to first 20 pages to avoid OOM on massive books during quick extraction
-    const maxPages = Math.min(pdf.numPages, 20);
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        // Access library safely
+        const pdfJs = (pdfjsLib as any).default || pdfjsLib;
+        
+        const loadingTask = pdfJs.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        
+        let fullText = '';
+        // Limit to first 20 pages to avoid OOM on massive books during quick extraction
+        const maxPages = Math.min(pdf.numPages, 20);
 
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      fullText += ` [Page ${i}] ${pageText}`;
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += ` [Page ${i}] ${pageText}`;
+        }
+        
+        return fullText;
+    } catch (e) {
+        console.error("PDF Extraction failed", e);
+        return "Error extracting text";
     }
-    
-    return fullText;
   }
 }
