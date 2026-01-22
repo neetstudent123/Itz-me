@@ -52,12 +52,14 @@ export class StudyStore {
   xp = signal<number>(1250);
   // Simple Level Formula: Level = sqrt(XP) / 2 roughly, or simple thresholds
   studyLevel = computed(() => Math.floor(this.xp() / 100) + 1);
+  
+  // Updated Rank Titles based on user request (Bronze/Silver/Gold)
   levelTitle = computed(() => {
     const lvl = this.studyLevel();
-    if (lvl < 10) return 'Novice Aspirant';
-    if (lvl < 25) return 'Syllabus Surfer';
-    if (lvl < 40) return 'Concept Master';
-    return 'NEET Legend';
+    if (lvl < 10) return 'Bronze Aspirant';
+    if (lvl < 25) return 'Silver Scholar';
+    if (lvl < 40) return 'Gold Master';
+    return 'Platinum Legend';
   });
 
   // Settings

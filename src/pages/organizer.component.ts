@@ -70,7 +70,12 @@ import { StudyStore, MistakeEntry } from '../services/study-store.service';
         @if (!activeChapter() && searchQuery.length === 0) {
           <div class="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
              <div class="text-center py-8">
-                <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Resource Vault</h2>
+                <div class="flex items-center justify-center gap-2 mb-2">
+                   <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Resource Vault</h2>
+                   <button (click)="openAddChapterModal()" class="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800/50 transition-colors" title="Add Custom Chapter">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                   </button>
+                </div>
                 <p class="text-slate-500 dark:text-slate-400">Select a subject to browse units or use search above.</p>
              </div>
 
@@ -293,6 +298,58 @@ import { StudyStore, MistakeEntry } from '../services/study-store.service';
         }
       </div>
 
+      <!-- Add Chapter Modal -->
+      @if (showAddChapterModal()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+           <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">Add New Chapter</h3>
+              
+              <div class="space-y-4">
+                 <div>
+                    <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Subject</label>
+                    <div class="flex gap-2">
+                       @for (sub of subjects; track sub) {
+                          <button (click)="newChapterSubject.set(sub)" 
+                             class="flex-1 py-2 rounded-lg border text-sm font-bold transition-colors"
+                             [class.bg-indigo-600]="newChapterSubject() === sub"
+                             [class.text-white]="newChapterSubject() === sub"
+                             [class.border-indigo-600]="newChapterSubject() === sub"
+                             [class.bg-slate-50]="newChapterSubject() !== sub"
+                             [class.text-slate-600]="newChapterSubject() !== sub"
+                             [class.border-slate-200]="newChapterSubject() !== sub"
+                             [class.dark:bg-slate-800]="newChapterSubject() !== sub"
+                             [class.dark:text-slate-400]="newChapterSubject() !== sub"
+                             [class.dark:border-slate-700]="newChapterSubject() !== sub">
+                             {{ sub }}
+                          </button>
+                       }
+                    </div>
+                 </div>
+
+                 <div>
+                    <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Unit Name</label>
+                    <input type="text" [(ngModel)]="newChapterUnit" list="unitOptions" placeholder="e.g. Mechanics" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <datalist id="unitOptions">
+                       @for (u of availableUnits(); track u) {
+                          <option [value]="u"></option>
+                       }
+                    </datalist>
+                 </div>
+
+                 <div>
+                    <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Chapter Title</label>
+                    <input type="text" [(ngModel)]="newChapterName" placeholder="e.g. Center of Mass" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                 </div>
+
+                 <div class="flex gap-3 pt-2">
+                    <button (click)="showAddChapterModal.set(false)" class="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+                    <button (click)="addNewChapter()" [disabled]="!newChapterName() || !newChapterUnit()" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-200 dark:shadow-none">Add Chapter</button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      }
+
       <!-- Modals (Mistake & Quiz) - Reused Logic -->
       @if (showMistakeModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -400,10 +457,27 @@ export class OrganizerComponent {
   showMistakeModal = signal(false);
   mistakeText = '';
   
+  // Add Chapter State
+  showAddChapterModal = signal(false);
+  newChapterSubject = signal('Physics');
+  newChapterUnit = signal('');
+  newChapterName = signal('');
+  
   // Computed
   filteredUnits = computed(() => {
     const allData = this.syllabusService.syllabus().filter(s => s.subject === this.activeSubject());
     return allData.reduce((acc: any[], curr) => [...acc, ...curr.units], []);
+  });
+
+  availableUnits = computed(() => {
+     const data = this.syllabusService.syllabus().find(s => s.subject === this.newChapterSubject());
+     // Flatten units from all matching class levels for suggestion
+     // Although logic in syllabus service just searches first match, UI suggestion helps consistency
+     const units = new Set<string>();
+     this.syllabusService.syllabus()
+        .filter(s => s.subject === this.newChapterSubject())
+        .forEach(s => s.units.forEach(u => units.add(u.name)));
+     return Array.from(units);
   });
 
   chapterMistakes = computed(() => {
@@ -552,5 +626,22 @@ export class OrganizerComponent {
      // To force main view search, user would need to navigate back or we'd auto-navigate. 
      // We'll keep it simple: Type -> Dropdown if active, View if inactive. 
      // If user wants to search globally from active, they can click 'X' to close active or just use dropdown.
+  }
+  
+  openAddChapterModal() {
+     this.newChapterUnit.set('');
+     this.newChapterName.set('');
+     // Default to active subject if set, else Physics
+     this.newChapterSubject.set(this.activeSubject());
+     this.showAddChapterModal.set(true);
+  }
+
+  addNewChapter() {
+     if(!this.newChapterUnit() || !this.newChapterName()) return;
+     this.syllabusService.addChapter(this.newChapterSubject(), this.newChapterUnit(), this.newChapterName());
+     
+     // Auto-switch to that subject so user sees the new item
+     this.activeSubject.set(this.newChapterSubject());
+     this.showAddChapterModal.set(false);
   }
 }

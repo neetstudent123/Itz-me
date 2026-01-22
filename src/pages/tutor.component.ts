@@ -1,3 +1,4 @@
+
 import { Component, inject, signal, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -192,13 +193,22 @@ export class TutorComponent {
         }
       }
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gemini Chat Error:', err); // Log error for debugging
       this.messages.update(msgs => {
         const newMsgs = [...msgs.filter(m => !m.isThinking)];
-        // If last message was partial model response, keep it or append error? 
-        // For simplicity, append error message.
-        newMsgs.push({ role: 'model', text: "I'm having trouble connecting to the neural network. Please try again later." });
+        
+        // Friendly error for 429 Quota Exceeded
+        let errorMessage = "I'm having trouble connecting to the neural network. Please try again later.";
+        
+        // Check for common 429 patterns in error object
+        if (err?.message?.includes('429') || err?.status === 429 || JSON.stringify(err).includes('429')) {
+             errorMessage = "⚠️ usage limit exceeded (429). The AI is currently busy. Please wait a minute before trying again.";
+        } else if (err?.message?.includes('503')) {
+             errorMessage = "⚠️ Service is temporarily unavailable. Please try again shortly.";
+        }
+
+        newMsgs.push({ role: 'model', text: errorMessage });
         return newMsgs;
       });
     } finally {

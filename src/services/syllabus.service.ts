@@ -1,3 +1,4 @@
+
 import { Injectable, signal } from '@angular/core';
 
 export interface ResourceLink {
@@ -204,6 +205,48 @@ export class SyllabusService {
       return newData;
     });
     this.saveResources();
+  }
+
+  addChapter(subject: string, unitName: string, chapterName: string) {
+    this.syllabus.update(data => {
+      const newData = JSON.parse(JSON.stringify(data));
+      
+      // Try to find existing unit first across all class levels for this subject
+      let targetUnit: any = null;
+      let targetGroup: any = null;
+
+      for (const group of newData) {
+        if (group.subject === subject) {
+           const foundUnit = group.units.find((u: any) => u.name.toLowerCase() === unitName.toLowerCase());
+           if (foundUnit) {
+             targetUnit = foundUnit;
+             break;
+           }
+           // Keep track of a fallback group (e.g. the first one found) to create new unit if needed
+           if (!targetGroup) targetGroup = group;
+        }
+      }
+
+      if (targetUnit) {
+         targetUnit.chapters.push({
+            id: `CUST_${Date.now()}`,
+            name: chapterName,
+            resource_links: []
+         });
+      } else if (targetGroup) {
+         // Create new unit in the first available group for this subject
+         targetGroup.units.push({
+            name: unitName,
+            chapters: [{
+               id: `CUST_${Date.now()}`,
+               name: chapterName,
+               resource_links: []
+            }]
+         });
+      }
+
+      return newData;
+    });
   }
 
   private saveResources() {
